@@ -76,6 +76,15 @@ else
     fi
 fi
 
+# 4. Cài đặt GitHub CLI (gh)
+log_info "Cài đặt GitHub CLI (gh)..."
+if pacman -Qi github-cli >/dev/null 2>&1; then
+    log_info "GitHub CLI đã được cài đặt từ trước."
+else
+    log_info "Đang cài đặt github-cli..."
+    yay -S --needed --noconfirm github-cli
+fi
+
 # Đảm bảo ~/.local/bin nằm trong PATH
 for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
     if [[ -f "$rc" ]] && ! grep -q 'export PATH=.*\.local/bin' "$rc"; then
