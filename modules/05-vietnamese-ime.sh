@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Description: Cài đặt Fcitx5 Lotus (gõ không gạch chân) & phím tắt Alt + Left Shift
+# Description: Cài đặt Fcitx5 Lotus (không gạch chân), phím tắt Alt+Shift, tự động chuyển đổi IME cho Spotlight
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -152,7 +152,7 @@ cat <<'EOF' > "${HOME}/.config/chromium-flags.conf"
 --wayland-text-input-version=3
 EOF
 
-# 5. Cấu hình biến môi trường toàn cục cho Wayland/Hyprland
+# 7. Cấu hình biến môi trường toàn cục cho Wayland/Hyprland
 log_info "Thiết lập biến môi trường IM Module..."
 mkdir -p "${HOME}/.config/environment.d"
 cat <<'EOF' > "${HOME}/.config/environment.d/fcitx5.conf"
@@ -180,7 +180,7 @@ if [[ -f "$HYPR_ENV" ]]; then
     fi
 fi
 
-# 6. Đảm bảo fcitx5 được autostart trong Hyprland và DMS chạy với biến môi trường IME
+# 8. Đảm bảo fcitx5 được autostart trong Hyprland và DMS chạy với biến môi trường IME
 HYPR_AUTOSTART="${HOME}/.config/hypr/config/autostart.lua"
 if [[ -f "$HYPR_AUTOSTART" ]]; then
     if grep -q 'dms run' "$HYPR_AUTOSTART"; then
@@ -191,22 +191,105 @@ if [[ -f "$HYPR_AUTOSTART" ]]; then
     fi
 fi
 
-# 7. Sửa lỗi focus cho DankMaterialShell Spotlight khi mở bằng Super+Space
-SPOTLIGHT_QML="${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/DankLauncherV2ModalSpotlight.qml"
-if [[ -f "$SPOTLIGHT_QML" ]]; then
-    if ! grep -q "root.spotlightContent?.searchField?.forceActiveFocus" "$SPOTLIGHT_QML"; then
-        sed -i 's/spotlightContent.searchField.selectAll();/&\n            Qt.callLater(() => { if (root.spotlightOpen \&\& root.spotlightContent?.searchField) { root.spotlightContent.searchField.forceActiveFocus(); } });/' "$SPOTLIGHT_QML"
-    fi
-fi
-
-# 8. Tự động chuyển sang Tiếng Anh khi mở Spotlight Launcher và khôi phục Tiếng Việt khi đóng
+# 9. Tự động chuyển sang Tiếng Anh khi mở Spotlight Launcher và khôi phục Tiếng Việt khi đóng
 log_info "Cấu hình tự động chuyển đổi IME khi mở/đóng Spotlight Launcher..."
 python3 << 'EOF'
 import pathlib
+import re
 
 dms_dir = pathlib.Path.home() / ".config" / "DankMaterialShell" / "shell"
+text_field = dms_dir / "DankCommon" / "Widgets" / "DankTextField.qml"
+spotlight = dms_dir / "Modals" / "DankLauncherV2" / "SpotlightLauncherContent.qml"
+launcher = dms_dir / "Modals" / "DankLauncherV2" / "LauncherContent.qml"
+spotlight_modal = dms_dir / "Modals" / "DankLauncherV2" / "DankLauncherV2ModalSpotlight.qml"
 modal_v2 = dms_dir / "Modals" / "DankLauncherV2" / "DankLauncherV2Modal.qml"
 
+# Dọn dẹp triệt để các thay đổi tạm thời cũ (nếu có) để giữ mã nguồn nguyên bản sạch sẽ
+if text_field.exists():
+    c = text_field.read_text(encoding="utf-8")
+    if "property alias displayText: textInput.displayText" in c:
+        c = re.sub(
+            r'    property alias text: textInput\.text\n    property alias displayText: textInput\.displayText\n    property alias inputMethodComposing: textInput\.inputMethodComposing\n    readonly property string effectiveText:.*?\n',
+            '    property alias text: textInput.text\n',
+            c
+        )
+        text_field.write_text(c, encoding="utf-8")
+        print("Đã dọn dẹp DankTextField.qml về nguyên bản.")
+
+if spotlight.exists():
+    c = spotlight.read_text(encoding="utf-8")
+    changed = False
+    if "searchInput.effectiveText" in c:
+        c = c.replace("searchInput.effectiveText.length > 0", "searchInput.text.length > 0")
+        c = c.replace("root.controller.setSearchQuery(searchInput.effectiveText);", "root.controller.setSearchQuery(searchInput.text);")
+        changed = True
+    if "function _updateSearch()" in c:
+        old_patch = """                function _updateSearch() {
+                    if (root.suspendSearchUpdates)
+                        return;
+                    actionPanel.hide();
+                    const q = searchInput.effectiveText;
+                    if (q.length > 0) {
+                        root.controller.setSearchQuery(q);
+                    } else {
+                        root.resetSearch();
+                    }
+                }
+
+                onTextChanged: _updateSearch()
+                onDisplayTextChanged: _updateSearch()"""
+        clean_code = """                onTextChanged: {
+                    if (root.suspendSearchUpdates)
+                        return;
+                    actionPanel.hide();
+                    if (text.length > 0) {
+                        root.controller.setSearchQuery(text);
+                    } else {
+                        root.resetSearch();
+                    }
+                }"""
+        if old_patch in c:
+            c = c.replace(old_patch, clean_code, 1)
+            changed = True
+    if changed:
+        spotlight.write_text(c, encoding="utf-8")
+        print("Đã dọn dẹp SpotlightLauncherContent.qml về nguyên bản.")
+
+if launcher.exists():
+    c = launcher.read_text(encoding="utf-8")
+    if "function _updateSearch()" in c:
+        old_patch = """                function _updateSearch() {
+                    controller.setSearchQuery(effectiveText);
+                    if (actionPanel.expanded) {
+                        actionPanel.hide();
+                    }
+                }
+
+                onTextChanged: _updateSearch()
+                onDisplayTextChanged: _updateSearch()"""
+        clean_code = """                onTextChanged: {
+                    controller.setSearchQuery(text);
+                    if (actionPanel.expanded) {
+                        actionPanel.hide();
+                    }
+                }"""
+        if old_patch in c:
+            c = c.replace(old_patch, clean_code, 1)
+            launcher.write_text(c, encoding="utf-8")
+            print("Đã dọn dẹp LauncherContent.qml về nguyên bản.")
+
+if spotlight_modal.exists():
+    c = spotlight_modal.read_text(encoding="utf-8")
+    if "Qt.callLater(() => { if (root.spotlightOpen && root.spotlightContent?.searchField)" in c:
+        c = re.sub(
+            r'\n\s*Qt\.callLater\(\(\) => \{\s*if \(root\.spotlightOpen && root\.spotlightContent\?\.searchField\) \{\s*root\.spotlightContent\.searchField\.forceActiveFocus\(\);\s*\}\s*\}\);',
+            '',
+            c
+        )
+        spotlight_modal.write_text(c, encoding="utf-8")
+        print("Đã dọn dẹp DankLauncherV2ModalSpotlight.qml về nguyên bản.")
+
+# Áp dụng giải pháp tập trung duy nhất tại DankLauncherV2Modal.qml
 if modal_v2.exists():
     content = modal_v2.read_text(encoding="utf-8")
     if "import Quickshell.Io" not in content:
@@ -269,19 +352,23 @@ if modal_v2.exists():
         if target_prop in content:
             content = content.replace(target_prop, ime_logic, 1)
             modal_v2.write_text(content, encoding="utf-8")
-            print("Đã patch DankLauncherV2Modal.qml (tự động chuyển English khi mở và khôi phục tiếng Việt khi đóng)")
+            print("Đã cấu hình DankLauncherV2Modal.qml tự động chuyển IME cho Spotlight.")
 EOF
 
-# Đồng bộ file đã patch vào thư mục runtime cache (nếu đang tồn tại)
+# Đồng bộ file vào thư mục runtime cache (nếu đang tồn tại)
 for cache_dir in /run/user/$(id -u)/danklinux-shell/*/; do
     if [[ -d "$cache_dir" ]]; then
         chmod -R u+w "$cache_dir" 2>/dev/null || true
+        cp -f "${HOME}/.config/DankMaterialShell/shell/DankCommon/Widgets/DankTextField.qml" "${cache_dir}/DankCommon/Widgets/" 2>/dev/null || true
         cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/DankLauncherV2Modal.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
+        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/DankLauncherV2ModalSpotlight.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
+        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/SpotlightLauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
+        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/LauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
         chmod -R u-w "$cache_dir" 2>/dev/null || true
     fi
 done
 
-# 9. Khởi động fcitx5 và DMS nếu đang chạy
+# 10. Khởi động fcitx5 và DMS nếu đang chạy
 if pgrep -x "Hyprland" >/dev/null 2>&1; then
     if command -v fcitx5 >/dev/null 2>&1; then
         log_info "Đang khởi động lại Fcitx5 trong phiên hiện tại..."

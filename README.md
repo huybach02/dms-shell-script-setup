@@ -34,7 +34,7 @@ setup-scripts/
 | **02** | `02-workspaces.sh` | Cố định các workspace vào màn hình: 1 (Edge), 2 (Helium), 3 (VSCode), 4 (Chromium), 5 trên Philips; 8, 9 trên AOC. |
 | **03** | `03-apps.sh` | Cài đặt Microsoft Edge, Visual Studio Code, Helium Browser, Chromium, AppImageLauncher, LibreOffice Fresh, Sublime Text & đặt mặc định. |
 | **04** | `04-app-rules-autostart.sh` | Cấu hình Hyprland window rules đưa cửa sổ vào đúng workspace chỉ định và khởi động tự động khi đăng nhập. |
-| **05** | `05-vietnamese-ime.sh` | Cài đặt Fcitx5 kèm bộ gõ Lotus (không gạch chân), phím tắt chuyển ngôn ngữ `Alt + Left Shift`, chia sẻ trạng thái gõ toàn cục (`ShareInputState=All`), sửa lỗi focus và filter kết quả tìm kiếm real-time khi gõ tiếng Việt trong DMS Spotlight search (`Super + Space`). |
+| **05** | `05-vietnamese-ime.sh` | Cài đặt Fcitx5 kèm bộ gõ Lotus (không gạch chân), phím tắt chuyển ngôn ngữ `Alt + Left Shift`, chia sẻ trạng thái gõ toàn cục (`ShareInputState=All`), tự động chuyển sang Tiếng Anh khi mở Spotlight search và khôi phục Tiếng Việt khi đóng (`Super + Space` / `Super + Enter`). |
 | **06** | `06-dev-environment.sh` | Cài đặt môi trường phát triển: PHP 8.5, Composer, Node.js 24 LTS, npm, Symfony CLI. |
 | **07** | `07-keybinds.sh` | Phím tắt chuyển workspace (`Super + 1..9`), chuyển màn hình (`Super + Alt + 1..3`), mở Dolphin (`Super + Shift + F` / `Super + E`), chụp màn hình vùng chọn không cần Enter (`Super + Shift + S`) kèm popup chỉnh sửa với Satty. |
 | **08** | `08-zsh-omz.sh` | Cài đặt Zsh, Oh My Zsh, theme robbyrussell, zsh-autosuggestions, zsh-syntax-highlighting và đặt Zsh làm shell mặc định cho Kitty. |
