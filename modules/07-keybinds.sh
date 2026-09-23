@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Description: Thiết lập phím tắt Hyprland (Workspace SUPER+1..9, Chụp màn hình tự động copy & edit popup SUPER+SHIFT+S, Monitor SUPER+ALT+1..3)
+# Description: Thiết lập phím tắt Hyprland (Workspace SUPER+1..9, Mở Dolphin SUPER+SHIFT+F, Chụp màn hình SUPER+SHIFT+S, Monitor SUPER+ALT+1..3)
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -206,6 +206,14 @@ content = re.sub(
     flags=re.DOTALL
 )
 
+# Gán phím tắt mở Dolphin (SUPER + SHIFT + F)
+if 'mainMod .. " + SHIFT + F"' not in content:
+    content = re.sub(
+        r'(hl\.bind\(mainMod \.\. " \+ E",\s*hl\.dsp\.exec_cmd\(launchPrefix \.\. FILE_MANAGER\)\))',
+        r'\1\nhl.bind(mainMod .. " + SHIFT + F",  hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))',
+        content
+    )
+
 binds_path.write_text(content, encoding="utf-8")
 print("Đã cập nhật file binds.lua thành công!")
 EOF
@@ -217,10 +225,11 @@ if pgrep -x "Hyprland" >/dev/null 2>&1; then
 fi
 
 log_success "Hoàn tất cấu hình phím tắt và chụp màn hình:"
-echo -e "  - ${BOLD}SUPER + SHIFT + S${NC} (hoặc Print) : Kéo chọn vùng màn hình -> Tự copy clipboard -> Hiện popup góc phải"
-echo -e "  - ${BOLD}Popup góc phải${NC}               : Bấm vào để mở cửa sổ chỉnh sửa ảnh (Satty: pen, shape, mũi tên, text)"
-echo -e "  - ${BOLD}SUPER + Print${NC}                   : Chụp toàn màn hình"
-echo -e "  - ${BOLD}SUPER + 1..9${NC}                    : Chuyển trực tiếp tới Workspace 1..9"
-echo -e "  - ${BOLD}SUPER + SHIFT + 1..9${NC}              : Di chuyển cửa sổ đang focus tới Workspace 1..9"
-echo -e "  - ${BOLD}SUPER + S${NC}                         : Bật / ẩn Scratchpad"
-echo -e "  - ${BOLD}SUPER + ALT + S${NC}                   : Di chuyển cửa sổ vào Scratchpad"
+echo -e "  - ${BOLD}SUPER + SHIFT + F${NC} (hoặc SUPER + E) : Mở trình quản lý file Dolphin"
+echo -e "  - ${BOLD}SUPER + SHIFT + S${NC} (hoặc Print)     : Kéo chọn vùng màn hình -> Tự copy clipboard -> Hiện popup góc phải"
+echo -e "  - ${BOLD}Popup góc phải${NC}                   : Bấm vào để mở cửa sổ chỉnh sửa ảnh (Satty: pen, shape, mũi tên, text)"
+echo -e "  - ${BOLD}SUPER + Print${NC}                       : Chụp toàn màn hình"
+echo -e "  - ${BOLD}SUPER + 1..9${NC}                        : Chuyển trực tiếp tới Workspace 1..9"
+echo -e "  - ${BOLD}SUPER + SHIFT + 1..9${NC}                  : Di chuyển cửa sổ đang focus tới Workspace 1..9"
+echo -e "  - ${BOLD}SUPER + S${NC}                             : Bật / ẩn Scratchpad"
+echo -e "  - ${BOLD}SUPER + ALT + S${NC}                       : Di chuyển cửa sổ vào Scratchpad"
