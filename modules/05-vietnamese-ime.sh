@@ -296,6 +296,72 @@ if launcher.exists():
             content = content.replace(old_launcher, new_launcher, 1)
             launcher.write_text(content, encoding="utf-8")
             print("Đã patch LauncherContent.qml (hỗ trợ real-time filter)")
+
+# 4. Patch DankLauncherV2Modal.qml (tự động chuyển sang tiếng Anh khi mở Spotlight và khôi phục lại tiếng Việt khi đóng)
+modal_v2 = dms_dir / "Modals" / "DankLauncherV2" / "DankLauncherV2Modal.qml"
+if modal_v2.exists():
+    content = modal_v2.read_text(encoding="utf-8")
+    if "import Quickshell.Io" not in content:
+        content = content.replace("import QtQuick\n", "import QtQuick\nimport Quickshell.Io\n", 1)
+    if "_wasVietnameseIme" not in content:
+        target_prop = "    property bool edgeHoverManaged: false\n"
+        ime_logic = """    property bool edgeHoverManaged: false
+    property bool _wasVietnameseIme: false
+
+    Process {
+        id: checkImeProc
+        command: ["fcitx5-remote"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                const state = data.trim();
+                if (state === "2") {
+                    root._wasVietnameseIme = true;
+                    if (switchImeToEnglishProc.running)
+                        switchImeToEnglishProc.running = false;
+                    switchImeToEnglishProc.running = true;
+                } else {
+                    root._wasVietnameseIme = false;
+                }
+            }
+        }
+    }
+
+    Process {
+        id: switchImeToEnglishProc
+        command: ["fcitx5-remote", "-c"]
+        running: false
+    }
+
+    Process {
+        id: restoreImeProc
+        command: ["fcitx5-remote", "-o"]
+        running: false
+    }
+
+    function _restoreImeIfNeeded() {
+        if (root._wasVietnameseIme) {
+            root._wasVietnameseIme = false;
+            if (restoreImeProc.running)
+                restoreImeProc.running = false;
+            restoreImeProc.running = true;
+        }
+    }
+
+    onSpotlightOpenChanged: {
+        if (spotlightOpen) {
+            if (checkImeProc.running)
+                checkImeProc.running = false;
+            checkImeProc.running = true;
+        } else {
+            _restoreImeIfNeeded();
+        }
+    }
+"""
+        if target_prop in content:
+            content = content.replace(target_prop, ime_logic, 1)
+            modal_v2.write_text(content, encoding="utf-8")
+            print("Đã patch DankLauncherV2Modal.qml (tự động chuyển English khi mở và khôi phục tiếng Việt khi đóng)")
 EOF
 
 # Đồng bộ file đã patch vào thư mục runtime cache (nếu đang tồn tại)
@@ -303,6 +369,7 @@ for cache_dir in /run/user/$(id -u)/danklinux-shell/*/; do
     if [[ -d "$cache_dir" ]]; then
         chmod -R u+w "$cache_dir" 2>/dev/null || true
         cp -f "${HOME}/.config/DankMaterialShell/shell/DankCommon/Widgets/DankTextField.qml" "${cache_dir}/DankCommon/Widgets/" 2>/dev/null || true
+        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/DankLauncherV2Modal.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
         cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/SpotlightLauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
         cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/LauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
         chmod -R u-w "$cache_dir" 2>/dev/null || true
