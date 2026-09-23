@@ -199,106 +199,14 @@ if [[ -f "$SPOTLIGHT_QML" ]]; then
     fi
 fi
 
-# 8. Sửa lỗi filter kết quả tìm kiếm theo thời gian thực (realtime) khi gõ tiếng Việt trong Spotlight
-log_info "Cấu hình tối ưu gõ tiếng Việt trong Spotlight Launcher (real-time filter)..."
+# 8. Tự động chuyển sang Tiếng Anh khi mở Spotlight Launcher và khôi phục Tiếng Việt khi đóng
+log_info "Cấu hình tự động chuyển đổi IME khi mở/đóng Spotlight Launcher..."
 python3 << 'EOF'
 import pathlib
 
 dms_dir = pathlib.Path.home() / ".config" / "DankMaterialShell" / "shell"
-text_field = dms_dir / "DankCommon" / "Widgets" / "DankTextField.qml"
-spotlight = dms_dir / "Modals" / "DankLauncherV2" / "SpotlightLauncherContent.qml"
-launcher = dms_dir / "Modals" / "DankLauncherV2" / "LauncherContent.qml"
-
-# 1. Patch DankTextField.qml (hỗ trợ displayText và effectiveText cho bộ gõ IME)
-if text_field.exists():
-    content = text_field.read_text(encoding="utf-8")
-    if "property alias displayText: textInput.displayText" not in content:
-        content = content.replace(
-            "    property alias text: textInput.text\n",
-            "    property alias text: textInput.text\n    property alias displayText: textInput.displayText\n    property alias inputMethodComposing: textInput.inputMethodComposing\n    readonly property string effectiveText: textInput.displayText.length > 0 ? textInput.displayText : textInput.text\n",
-            1
-        )
-        text_field.write_text(content, encoding="utf-8")
-        print("Đã patch DankTextField.qml (hỗ trợ displayText và effectiveText)")
-
-# 2. Patch SpotlightLauncherContent.qml (filter kết quả real-time khi đang soạn chữ)
-if spotlight.exists():
-    content = spotlight.read_text(encoding="utf-8")
-    changed = False
-    if "searchInput.effectiveText.length > 0" not in content:
-        content = content.replace("searchInput.text.length > 0", "searchInput.effectiveText.length > 0")
-        changed = True
-    if "function _updateSearch()" not in content:
-        old_search = """                onTextChanged: {
-                    if (root.suspendSearchUpdates)
-                        return;
-                    actionPanel.hide();
-                    if (text.length > 0) {
-                        root.controller.setSearchQuery(text);
-                    } else {
-                        root.resetSearch();
-                    }
-                }"""
-        new_search = """                function _updateSearch() {
-                    if (root.suspendSearchUpdates)
-                        return;
-                    actionPanel.hide();
-                    const q = searchInput.effectiveText;
-                    if (q.length > 0) {
-                        root.controller.setSearchQuery(q);
-                    } else {
-                        root.resetSearch();
-                    }
-                }
-
-                onTextChanged: _updateSearch()
-                onDisplayTextChanged: _updateSearch()"""
-        if old_search in content:
-            content = content.replace(old_search, new_search, 1)
-            changed = True
-    if "root.controller.setSearchQuery(searchInput.effectiveText);" not in content:
-        content = content.replace(
-            "root.controller.setSearchQuery(searchInput.text);",
-            "root.controller.setSearchQuery(searchInput.effectiveText);"
-        )
-        changed = True
-    if changed:
-        spotlight.write_text(content, encoding="utf-8")
-        print("Đã patch SpotlightLauncherContent.qml (filter kết quả real-time khi gõ tiếng Việt)")
-
-# 3. Patch LauncherContent.qml
-if launcher.exists():
-    content = launcher.read_text(encoding="utf-8")
-    if "onDisplayTextChanged: _updateSearch()" not in content:
-        old_launcher = """                onTextChanged: {
-                    controller.setSearchQuery(effectiveText);
-                    if (actionPanel.expanded) {
-                        actionPanel.hide();
-                    }
-                }"""
-        if old_launcher not in content:
-            old_launcher = """                onTextChanged: {
-                    controller.setSearchQuery(text);
-                    if (actionPanel.expanded) {
-                        actionPanel.hide();
-                    }
-                }"""
-        new_launcher = """                function _updateSearch() {
-                    controller.setSearchQuery(effectiveText);
-                    if (actionPanel.expanded) {
-                        actionPanel.hide();
-                    }
-                }
-
-                onTextChanged: _updateSearch()
-                onDisplayTextChanged: _updateSearch()"""
-        if old_launcher in content:
-            content = content.replace(old_launcher, new_launcher, 1)
-            launcher.write_text(content, encoding="utf-8")
-            print("Đã patch LauncherContent.qml (hỗ trợ real-time filter)")
-
-# 4. Patch DankLauncherV2Modal.qml (tự động chuyển sang tiếng Anh khi mở Spotlight và khôi phục lại tiếng Việt khi đóng)
 modal_v2 = dms_dir / "Modals" / "DankLauncherV2" / "DankLauncherV2Modal.qml"
+
 if modal_v2.exists():
     content = modal_v2.read_text(encoding="utf-8")
     if "import Quickshell.Io" not in content:
@@ -368,10 +276,7 @@ EOF
 for cache_dir in /run/user/$(id -u)/danklinux-shell/*/; do
     if [[ -d "$cache_dir" ]]; then
         chmod -R u+w "$cache_dir" 2>/dev/null || true
-        cp -f "${HOME}/.config/DankMaterialShell/shell/DankCommon/Widgets/DankTextField.qml" "${cache_dir}/DankCommon/Widgets/" 2>/dev/null || true
         cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/DankLauncherV2Modal.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
-        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/SpotlightLauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
-        cp -f "${HOME}/.config/DankMaterialShell/shell/Modals/DankLauncherV2/LauncherContent.qml" "${cache_dir}/Modals/DankLauncherV2/" 2>/dev/null || true
         chmod -R u-w "$cache_dir" 2>/dev/null || true
     fi
 done
