@@ -143,6 +143,7 @@ cat <<'EOF' > "${HOME}/.config/microsoft-edge-stable-flags.conf"
 --ozone-platform=wayland
 --enable-wayland-ime
 --wayland-text-input-version=3
+--password-store=basic
 EOF
 
 cat <<'EOF' > "${HOME}/.config/chromium-flags.conf"
@@ -150,6 +151,7 @@ cat <<'EOF' > "${HOME}/.config/chromium-flags.conf"
 --ozone-platform=wayland
 --enable-wayland-ime
 --wayland-text-input-version=3
+--password-store=basic
 EOF
 
 # 7. Cấu hình biến môi trường toàn cục cho Wayland/Hyprland
