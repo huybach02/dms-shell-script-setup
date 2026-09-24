@@ -22,6 +22,8 @@ pacman -S --needed --noconfirm \
     qt6ct \
     swash \
     adw-gtk-theme \
-    xorg-xhost
+    xorg-xhost \
+    gvfs \
+    gvfs-mtp
 
 echo ">> Hoàn tất! Tất cả tiện ích desktop cần thiết đã được khôi phục."
