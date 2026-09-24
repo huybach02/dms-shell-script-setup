@@ -55,6 +55,28 @@ if script_file.exists():
     content = script_file.read_text(encoding="utf-8")
     changed = False
 
+    # A0. Hỗ trợ đọc token từ jetski-standalone-oauth-token và thêm timeout cho secret-tool tránh treo vô hạn khi keyring bị khóa
+    if "jetski-standalone-oauth-token" not in content:
+        old_token_res = '''KEYRING_JSON=""
+if command -v secret-tool >/dev/null 2>&1; then
+    KEYRING_JSON=$(secret-tool lookup service gemini username antigravity 2>/dev/null || true)
+fi'''
+        new_token_res = '''KEYRING_JSON=""
+# Ưu tiên đọc trực tiếp từ file token của Antigravity CLI (nhanh, không bị treo khi keyring bị lock)
+if [ -f "$HOME/.gemini/jetski-standalone-oauth-token" ]; then
+    KEYRING_JSON=$(cat "$HOME/.gemini/jetski-standalone-oauth-token" 2>/dev/null || true)
+fi
+if [ -z "$KEYRING_JSON" ] && [ -f "$HOME/.gemini/oauth_credentials.json" ]; then
+    KEYRING_JSON=$(cat "$HOME/.gemini/oauth_credentials.json" 2>/dev/null || true)
+fi
+# Dự phòng tìm trong OS keyring bằng secret-tool (thêm timeout 2s tránh treo vĩnh viễn nếu keyring bị khóa)
+if [ -z "$KEYRING_JSON" ] && command -v secret-tool >/dev/null 2>&1; then
+    KEYRING_JSON=$(timeout 2 secret-tool lookup service gemini username antigravity 2>/dev/null || true)
+fi'''
+        if old_token_res in content:
+            content = content.replace(old_token_res, new_token_res, 1)
+            changed = True
+
     # A. Xóa sạch cache khi người dùng đã logout (keyring rỗng)
     if '[ -z "$KEYRING_JSON" ] && emit_logged_out' in content:
         content = content.replace(
