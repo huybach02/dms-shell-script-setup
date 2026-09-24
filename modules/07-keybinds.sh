@@ -218,14 +218,67 @@ binds_path.write_text(content, encoding="utf-8")
 print("Đã cập nhật file binds.lua thành công!")
 EOF
 
-# 6. Reload Hyprland nếu đang chạy
+# 6. Cấu hình biến môi trường Qt và theme cho Hyprland & systemd (fix lỗi Dolphin vừa trắng vừa đen khi mở bằng phím tắt)
+log_info "Cấu hình biến môi trường Qt / Theme cho systemd user session..."
+mkdir -p "${HOME}/.config/environment.d"
+cat <<'EOF' > "${HOME}/.config/environment.d/10-theme.conf"
+QT_QPA_PLATFORM="wayland;xcb"
+QT_QPA_PLATFORMTHEME=qt6ct
+ELECTRON_OZONE_PLATFORM_HINT=auto
+HYPRCURSOR_THEME="Bibata-Modern-Ice"
+HYPRCURSOR_SIZE=24
+XCURSOR_THEME="Bibata-Modern-Ice"
+XCURSOR_SIZE=24
+EOF
+
+log_info "Cập nhật biến môi trường Qt / Theme trong Hyprland environment.lua..."
+HYPR_ENV="${HOME}/.config/hypr/config/environment.lua"
+if [[ -f "$HYPR_ENV" ]]; then
+    python3 - <<'EOF'
+import re
+from pathlib import Path
+
+env_file = Path.home() / ".config" / "hypr" / "config" / "environment.lua"
+if env_file.exists():
+    content = env_file.read_text(encoding="utf-8")
+    qt_vars = [
+        'hl.env("QT_QPA_PLATFORM", "wayland;xcb")',
+        'hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")',
+        'hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")',
+        'hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")',
+        'hl.env("HYPRCURSOR_SIZE", "24")',
+        'hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")',
+        'hl.env("XCURSOR_SIZE", "24")',
+    ]
+    missing = [v for v in qt_vars if v not in content]
+    if missing:
+        lines_to_add = "\n".join(missing)
+        if 'hl.env("PATH"' in content:
+            content = re.sub(r'(hl\.env\("PATH".*\n)', r'\1' + lines_to_add + '\n', content, count=1)
+        else:
+            content = content + "\n" + lines_to_add + "\n"
+        env_file.write_text(content, encoding="utf-8")
+        print("Đã cập nhật environment.lua với các biến môi trường Qt/Theme.")
+EOF
+fi
+
+# Đồng bộ trực tiếp vào session đang chạy
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user set-environment QT_QPA_PLATFORMTHEME=qt6ct QT_QPA_PLATFORM="wayland;xcb" ELECTRON_OZONE_PLATFORM_HINT=auto HYPRCURSOR_THEME="Bibata-Modern-Ice" HYPRCURSOR_SIZE=24 XCURSOR_THEME="Bibata-Modern-Ice" XCURSOR_SIZE=24 2>/dev/null || true
+fi
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME=qt6ct QT_QPA_PLATFORM="wayland;xcb" ELECTRON_OZONE_PLATFORM_HINT=auto 2>/dev/null || true
+fi
+
+# 7. Reload Hyprland nếu đang chạy
 if pgrep -x "Hyprland" >/dev/null 2>&1; then
     log_info "Reload cấu hình Hyprland..."
     hyprctl reload >/dev/null 2>&1 || true
 fi
 
-log_success "Hoàn tất cấu hình phím tắt và chụp màn hình:"
+log_success "Hoàn tất cấu hình phím tắt, chụp màn hình và giao diện Qt:"
 echo -e "  - ${BOLD}SUPER + SHIFT + F${NC} (hoặc SUPER + E) : Mở trình quản lý file Dolphin"
+echo -e "  - ${BOLD}Giao diện Qt / Dolphin${NC}               : Đồng bộ Dark Theme (qt6ct) cho phím tắt và systemd"
 echo -e "  - ${BOLD}SUPER + SHIFT + S${NC} (hoặc Print)     : Kéo chọn vùng màn hình -> Tự copy clipboard -> Hiện popup góc phải"
 echo -e "  - ${BOLD}Popup góc phải${NC}                   : Bấm vào để mở cửa sổ chỉnh sửa ảnh (Satty: pen, shape, mũi tên, text)"
 echo -e "  - ${BOLD}SUPER + Print${NC}                       : Chụp toàn màn hình"
@@ -233,3 +286,4 @@ echo -e "  - ${BOLD}SUPER + 1..9${NC}                        : Chuyển trực t
 echo -e "  - ${BOLD}SUPER + SHIFT + 1..9${NC}                  : Di chuyển cửa sổ đang focus tới Workspace 1..9"
 echo -e "  - ${BOLD}SUPER + S${NC}                             : Bật / ẩn Scratchpad"
 echo -e "  - ${BOLD}SUPER + ALT + S${NC}                       : Di chuyển cửa sổ vào Scratchpad"
+
