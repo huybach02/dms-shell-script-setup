@@ -12,9 +12,9 @@ fi
 
 log_info "Bắt đầu thiết lập plugin Antigravity Usage cho DankMaterialShell..."
 
-# 1. Kiểm tra các gói phụ thuộc cần thiết
+# 1. Kiểm tra các gói phụ thuộc cần thiết (jq, curl)
 REQUIRED_PKGS=()
-for pkg in jq curl secret-tool; do
+for pkg in jq curl; do
     if ! command -v "$pkg" >/dev/null 2>&1; then
         REQUIRED_PKGS+=("$pkg")
     fi

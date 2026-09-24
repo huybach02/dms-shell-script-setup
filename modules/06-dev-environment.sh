@@ -76,7 +76,7 @@ else
     fi
 fi
 
-# 4. Cài đặt GitHub CLI (gh)
+# 4. Cài đặt GitHub CLI (gh) và vô hiệu hóa GNOME Keyring
 log_info "Cài đặt GitHub CLI (gh)..."
 if pacman -Qi github-cli >/dev/null 2>&1; then
     log_info "GitHub CLI đã được cài đặt từ trước."
@@ -84,6 +84,16 @@ else
     log_info "Đang cài đặt github-cli..."
     yay -S --needed --noconfirm github-cli
 fi
+
+# Vô hiệu hóa GNOME Keyring trên Hyprland (tránh lỗi treo ngầm do gcr-prompter không hiện popup nhập mật khẩu)
+log_info "Kiểm tra và vô hiệu hóa GNOME Keyring daemon..."
+systemctl --user stop gnome-keyring-daemon.service gnome-keyring-daemon.socket 2>/dev/null || true
+systemctl --user mask gnome-keyring-daemon.service gnome-keyring-daemon.socket 2>/dev/null || true
+if pacman -Qi gnome-keyring >/dev/null 2>&1; then
+    log_info "Gỡ bỏ gói gnome-keyring không cần thiết..."
+    sudo pacman -Rdd --noconfirm gnome-keyring 2>/dev/null || true
+fi
+sudo rm -f /etc/xdg/autostart/gnome-keyring-*.desktop 2>/dev/null || true
 
 # Đảm bảo ~/.local/bin nằm trong PATH
 for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do

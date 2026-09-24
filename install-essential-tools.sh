@@ -15,7 +15,6 @@ pacman -S --needed --noconfirm \
     wl-clipboard \
     uwsm \
     brightnessctl \
-    gnome-keyring \
     grim \
     slurp \
     hyprpicker \
