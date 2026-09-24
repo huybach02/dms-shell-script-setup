@@ -36,8 +36,8 @@ if [[ ! -d "$MOUNT_POINT" ]]; then
 fi
 sudo chown -R "${USER}:${USER}" "$MOUNT_POINT" 2>/dev/null || true
 
-# 3. Cấu hình /etc/fstab
-FSTAB_LINE="UUID=${TARGET_UUID} ${MOUNT_POINT} ntfs3 rw,nosuid,nodev,relatime,uid=1000,gid=1000,iocharset=utf8,nofail,x-systemd.automount 0 0"
+# 3. Cấu hình /etc/fstab (kèm x-gvfs-show để hiển thị trên GTK FileChooser / VSCode)
+FSTAB_LINE="UUID=${TARGET_UUID} ${MOUNT_POINT} ntfs3 rw,nosuid,nodev,relatime,uid=1000,gid=1000,iocharset=utf8,nofail,x-systemd.automount,x-gvfs-show,x-gvfs-name=Data 0 0"
 
 if grep -q "$TARGET_UUID" /etc/fstab; then
     log_info "UUID ${TARGET_UUID} đã tồn tại trong /etc/fstab. Đang cập nhật cấu hình tối ưu..."
@@ -70,6 +70,12 @@ sudo systemd-tmpfiles --create "$TMPFILES_CONF" 2>/dev/null || true
 
 # Tạo symlink tiện ích trong thư mục Home (~/Data -> /mnt/Data)
 ln -sfn "$MOUNT_POINT" "$HOME_DATA_SYMLINK"
+
+# Thêm bookmark cho GTK FileChooser sidebar (VSCode, trình duyệt)
+mkdir -p "${HOME}/.config/gtk-3.0"
+if ! grep -q "${MOUNT_POINT}" "${HOME}/.config/gtk-3.0/bookmarks" 2>/dev/null; then
+    echo "file://${MOUNT_POINT} Data" >> "${HOME}/.config/gtk-3.0/bookmarks"
+fi
 
 # 6. Nạp lại cấu hình systemd và mount thử nghiệm
 log_info "Nạp lại systemd daemon và mount phân vùng..."
