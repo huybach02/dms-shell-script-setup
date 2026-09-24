@@ -43,6 +43,11 @@ else
     log_success "Theme ${THEME_NAME} đã tồn tại trong /usr/share/sddm/themes/."
 fi
 
+# Tạo symlink catppuccin-mocha trỏ tới catppuccin-mocha-mauve để hỗ trợ cả tên ngắn gọn
+if [[ -d "/usr/share/sddm/themes/${THEME_NAME}" && ! -e "/usr/share/sddm/themes/catppuccin-mocha" ]]; then
+    sudo ln -sfn "/usr/share/sddm/themes/${THEME_NAME}" "/usr/share/sddm/themes/catppuccin-mocha"
+fi
+
 # 3. Gỡ bỏ theme Astronaut (nếu còn tồn tại) để dọn sạch dung lượng
 if pacman -Qq sddm-astronaut-theme >/dev/null 2>&1; then
     log_info "Phát hiện sddm-astronaut-theme, đang gỡ bỏ để giải phóng dung lượng..."
