@@ -69,6 +69,19 @@ if [[ -f "$HYPR_VARS" ]]; then
     fi
 fi
 
+# 4. Cấu hình flags tối ưu cho Microsoft Edge và Chromium trên Wayland / Hyprland
+log_info "Cấu hình flags tối ưu cho Microsoft Edge và Chromium..."
+for flag_file in "${HOME}/.config/microsoft-edge-stable-flags.conf" "${HOME}/.config/chromium-flags.conf"; do
+    mkdir -p "$(dirname "$flag_file")"
+    cat <<'EOF' > "$flag_file"
+--ozone-platform-hint=auto
+--ozone-platform=wayland
+--enable-wayland-ime
+--wayland-text-input-version=3
+--password-store=basic
+EOF
+done
+
 log_success "Hoàn tất cài đặt phần mềm và thiết lập ứng dụng mặc định!"
 echo -e "  - Trình duyệt mặc định: Microsoft Edge"
 echo -e "  - Trình soạn thảo mặc định: Sublime Text"
