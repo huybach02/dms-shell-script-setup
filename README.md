@@ -21,7 +21,11 @@ setup-scripts/
     ├── 07-keybinds.sh            # Phím tắt Hyprland & chụp màn hình nhanh (Super+Shift+S)
     ├── 08-zsh-omz.sh             # Oh My Zsh (robbyrussell, autosuggestions, syntax-highlighting)
     ├── 09-dms-plugins.sh         # Plugin DMS Antigravity CLI (quota widget & hiển thị email)
-    └── 10-clipboard-image-attach.sh # Đính kèm ảnh clipboard vào terminal AI agent (Ctrl+Shift+V)
+    ├── 10-clipboard-image-attach.sh # Đính kèm ảnh clipboard vào terminal AI agent (Ctrl+Shift+V)
+    ├── 11-automount-data-drive.sh   # Tự động mount phân vùng Data (NTFS) vào /mnt/Data
+    ├── 12-display-manager-sddm.sh   # SDDM GUI Display Manager & theme Catppuccin Mocha
+    ├── 13-dms-processlist-popup.sh  # Tùy biến popup Processes (biểu đồ Disk & nút X đóng popup)
+    └── 14-dms-workspace-switcher-alttab.sh # Popup Alt+Tab chuyển workspace dạng snapshot tĩnh, nhả Alt tự focus
 ```
 
 ---
@@ -41,13 +45,16 @@ setup-scripts/
 | **09** | `09-dms-plugins.sh` | Cài đặt plugin `dms-antigravity-cli`, cấu hình hiển thị trên taskbar bên phải, patch tự động lấy email, dọn cache và cập nhật % quota tức thì khi chuyển đổi / đăng xuất tài khoản. |
 | **10** | `10-clipboard-image-attach.sh` | Tự động đính kèm ảnh từ clipboard vào terminal của các AI agent (`antigravity-cli` / `agy`): bấm `Ctrl + Shift + V` trong Kitty hoặc `Super + Shift + V` toàn hệ thống. |
 | **11** | `11-automount-data-drive.sh` | Tự động mount phân vùng Data (NTFS) vào `/mnt/Data` khi boot, tạo symlink `/run/media/...` giữ tương thích và `~/Data` tiện lợi. |
+| **12** | `12-display-manager-sddm.sh` | Cài đặt và cấu hình SDDM Display Manager với theme đồ họa Catppuccin Mocha nhẹ đẹp (thay thế greetd/tuigreet), tự động chuyển đổi service hệ thống. |
+| **13** | `13-dms-processlist-popup.sh` | Tùy biến popup Processes của DankMaterialShell: tích hợp biểu đồ tròn theo dõi dung lượng ổ đĩa (Disk usage) cạnh CPU/RAM (click chuyển đổi ổ đĩa) và bổ sung nút 'X' đóng nhanh popup cạnh thanh tìm kiếm. |
+| **14** | `14-dms-workspace-switcher-alttab.sh` | Chuyển đổi Workspace dạng popup modal giữa màn hình (`Alt + Tab`), duyệt xoay vòng các workspace với snapshot screencopy trực tiếp sắc nét thời gian thực, tự động focus chuyển workspace khi nhả phím `Alt` (hoặc nhấn `Enter`/`Space`), hỗ trợ `Alt + Shift + Tab` duyệt lùi, và chống nhảy con trỏ chuột khi đổi workspace (`no_warps = true`, `warp_on_change_workspace = 0`). |
 
 ---
 
 ## 🚀 Cách sử dụng
 
 ### 1. Chạy TOÀN BỘ tất cả các module (Mặc định)
-Hệ thống sẽ tự động thực thi lần lượt từ module 01 đến 11:
+Hệ thống sẽ tự động thực thi lần lượt từ module 01 đến 14:
 ```bash
 cd ~/setup-scripts
 ./setup.sh

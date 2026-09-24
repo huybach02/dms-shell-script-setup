@@ -134,20 +134,29 @@ if not backup_path.exists():
 
 # Thay thế di chuyển cửa sổ (Window move)
 old_move_pattern = re.compile(
-    r'hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. digitCode\(1\),     hl\.dsp\.window\.move\(\{ monitor = MONITOR1 \}\)\)\n'
+    r'(hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. digitCode\(1\),     hl\.dsp\.window\.move\(\{ monitor = MONITOR1 \}\)\)\n'
     r'hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. digitCode\(2\),     hl\.dsp\.window\.move\(\{ monitor = MONITOR2 \}\)\)\n'
-    r'hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. digitCode\(3\),     hl\.dsp\.window\.move\(\{ monitor = MONITOR3 \}\)\)'
+    r'hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. digitCode\(3\),     hl\.dsp\.window\.move\(\{ monitor = MONITOR3 \}\)\)|'
+    r'-- Move active window to workspace number \(SUPER \+ SHIFT \+ 1\.\.9\)\n'
+    r'for i = 1, NUM_WPM do\n'
+    r'    local key = i % 10\n'
+    r'    hl\.bind\(mainMod \.\. " \+ SHIFT \+ " \.\. (?:digitCode\(key\)|key), hl\.dsp\.window\.move\(\{ workspace = i \}\)\)\n'
+    r'end\n'
+    r'-- Move active window to monitor \(SUPER \+ ALT \+ SHIFT \+ 1\.\.3\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ SHIFT \+ " \.\. (?:digitCode\(1\)|1), hl\.dsp\.window\.move\(\{ monitor = MONITOR1 \}\)\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ SHIFT \+ " \.\. (?:digitCode\(2\)|2), hl\.dsp\.window\.move\(\{ monitor = MONITOR2 \}\)\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ SHIFT \+ " \.\. (?:digitCode\(3\)|3), hl\.dsp\.window\.move\(\{ monitor = MONITOR3 \}\)\))'
 )
 new_move_content = (
     '-- Move active window to workspace number (SUPER + SHIFT + 1..9)\n'
     'for i = 1, NUM_WPM do\n'
     '    local key = i % 10\n'
-    '    hl.bind(mainMod .. " + SHIFT + " .. digitCode(key), hl.dsp.window.move({ workspace = i }))\n'
+    '    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))\n'
     'end\n'
     '-- Move active window to monitor (SUPER + ALT + SHIFT + 1..3)\n'
-    'hl.bind(mainMod .. " + ALT + SHIFT + " .. digitCode(1), hl.dsp.window.move({ monitor = MONITOR1 }))\n'
-    'hl.bind(mainMod .. " + ALT + SHIFT + " .. digitCode(2), hl.dsp.window.move({ monitor = MONITOR2 }))\n'
-    'hl.bind(mainMod .. " + ALT + SHIFT + " .. digitCode(3), hl.dsp.window.move({ monitor = MONITOR3 }))'
+    'hl.bind(mainMod .. " + ALT + SHIFT + 1", hl.dsp.window.move({ monitor = MONITOR1 }))\n'
+    'hl.bind(mainMod .. " + ALT + SHIFT + 2", hl.dsp.window.move({ monitor = MONITOR2 }))\n'
+    'hl.bind(mainMod .. " + ALT + SHIFT + 3", hl.dsp.window.move({ monitor = MONITOR3 }))'
 )
 if old_move_pattern.search(content):
     content = old_move_pattern.sub(new_move_content, content, count=1)
@@ -158,7 +167,7 @@ if old_move_pattern.search(content):
 
 # Thay thế chuyển workspace & monitors
 old_ws_pattern = re.compile(
-    r'-- Focus on monitors\n'
+    r'(-- Focus on monitors\n'
     r'hl\.bind\(mainMod \.\. " \+ " \.\. digitCode\(1\), hl\.dsp\.focus\(\{ monitor = MONITOR1 \}\)\)\n'
     r'hl\.bind\(mainMod \.\. " \+ " \.\. digitCode\(2\), hl\.dsp\.focus\(\{ monitor = MONITOR2 \}\)\)\n'
     r'hl\.bind\(mainMod \.\. " \+ " \.\. digitCode\(3\), hl\.dsp\.focus\(\{ monitor = MONITOR3 \}\)\)\n\n'
@@ -166,23 +175,45 @@ old_ws_pattern = re.compile(
     r'-- Absolute\n'
     r'for i = 1, NUM_WPM do\n'
     r'    local key = i % 10\n'
-    r'    hl.bind\(mainMod \.\. " \+ ALT \+ " \.\. digitCode\(key\), hl\.dsp\.focus\(\{ workspace = i \}\)\)\n'
-    r'end'
+    r'    hl\.bind\(mainMod \.\. " \+ ALT \+ " \.\. digitCode\(key\), hl\.dsp\.focus\(\{ workspace = i \}\)\)\n'
+    r'end|'
+    r'-- Focus on workspace number\n'
+    r'-- Absolute \(SUPER \+ 1\.\.9\)\n'
+    r'for i = 1, NUM_WPM do\n'
+    r'    local key = i % 10\n'
+    r'    hl\.bind\(mainMod \.\. " \+ " \.\. (?:digitCode\(key\)|key), hl\.dsp\.focus\(\{ workspace = i \}\)\)\n'
+    r'end\n\n'
+    r'-- Focus on monitors \(SUPER \+ ALT \+ 1\.\.3\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ " \.\. (?:digitCode\(1\)|1), hl\.dsp\.focus\(\{ monitor = MONITOR1 \}\)\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ " \.\. (?:digitCode\(2\)|2), hl\.dsp\.focus\(\{ monitor = MONITOR2 \}\)\)\n'
+    r'hl\.bind\(mainMod \.\. " \+ ALT \+ " \.\. (?:digitCode\(3\)|3), hl\.dsp\.focus\(\{ monitor = MONITOR3 \}\)\))'
 )
 new_ws_content = (
     '-- Focus on workspace number\n'
     '-- Absolute (SUPER + 1..9)\n'
     'for i = 1, NUM_WPM do\n'
     '    local key = i % 10\n'
-    '    hl.bind(mainMod .. " + " .. digitCode(key), hl.dsp.focus({ workspace = i }))\n'
+    '    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))\n'
     'end\n\n'
     '-- Focus on monitors (SUPER + ALT + 1..3)\n'
-    'hl.bind(mainMod .. " + ALT + " .. digitCode(1), hl.dsp.focus({ monitor = MONITOR1 }))\n'
-    'hl.bind(mainMod .. " + ALT + " .. digitCode(2), hl.dsp.focus({ monitor = MONITOR2 }))\n'
-    'hl.bind(mainMod .. " + ALT + " .. digitCode(3), hl.dsp.focus({ monitor = MONITOR3 }))'
+    'hl.bind(mainMod .. " + ALT + 1", hl.dsp.focus({ monitor = MONITOR1 }))\n'
+    'hl.bind(mainMod .. " + ALT + 2", hl.dsp.focus({ monitor = MONITOR2 }))\n'
+    'hl.bind(mainMod .. " + ALT + 3", hl.dsp.focus({ monitor = MONITOR3 }))'
 )
 if old_ws_pattern.search(content):
     content = old_ws_pattern.sub(new_ws_content, content, count=1)
+
+# Làm sạch các phím relative còn dính digitCode
+content = re.sub(
+    r'hl\.bind\(mainMod \.\. " \+ SHIFT \+ CONTROL \+ " \.\. digitCode\(key\),',
+    'hl.bind(mainMod .. " + SHIFT + CONTROL + " .. key,',
+    content
+)
+content = re.sub(
+    r'hl\.bind\(mainMod \.\. " \+ CONTROL \+ " \.\. digitCode\(key\),',
+    'hl.bind(mainMod .. " + CONTROL + " .. key,',
+    content
+)
 
 # Thay thế Scratchpad move bằng SUPER + ALT + S để nhường SUPER + SHIFT + S cho chụp màn hình
 content = re.sub(
