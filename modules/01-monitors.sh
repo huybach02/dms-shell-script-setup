@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Description: Thiết lập 2 màn hình (Philips bên trái 0x0, AOC bên phải 1920x0, 75Hz, 1080p)
+# Description: Thiết lập 2 màn hình (Philips bên trái 0x0, AOC bên phải 1920x0, 75Hz, 1080p) & Dock bên trái màn hình AOC
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -72,10 +72,53 @@ if [[ -f "$WORKSPACES_FILE" ]]; then
     sed -i 's/^--[[:space:]]*\(hl\.workspace_rule({ workspace = "[456]", monitor = MONITOR2.*\)/\1/' "$WORKSPACES_FILE"
 fi
 
-# 4. Áp dụng ngay nếu Hyprland đang chạy
+# 4. Cấu hình thanh Dock (DankMaterialShell) hiển thị bên trái màn hình AOC (DP-2)
+log_info "Cấu hình thanh Dock DankMaterialShell hiển thị bên trái màn hình AOC..."
+DMS_CONFIG_DIR="${HOME}/.config/DankMaterialShell"
+DMS_SETTINGS="${DMS_CONFIG_DIR}/settings.json"
+mkdir -p "$DMS_CONFIG_DIR"
+
+if [[ -f "$DMS_SETTINGS" ]]; then
+    tmp=$(mktemp)
+    jq '
+        .showDock = true |
+        .dockPosition = 2 |
+        .screenPreferences = (.screenPreferences // {}) |
+        .screenPreferences.dock = [{"name": "DP-2", "model": "24V2W1G5"}] |
+        .showOnLastDisplay = (.showOnLastDisplay // {}) |
+        .showOnLastDisplay.dock = true
+    ' "$DMS_SETTINGS" > "$tmp" && mv "$tmp" "$DMS_SETTINGS"
+else
+    cat <<'EOF' > "$DMS_SETTINGS"
+{
+  "showDock": true,
+  "dockPosition": 2,
+  "screenPreferences": {
+    "dock": [
+      {
+        "name": "DP-2",
+        "model": "24V2W1G5"
+      }
+    ]
+  },
+  "showOnLastDisplay": {
+    "dock": true
+  }
+}
+EOF
+fi
+
+if pgrep -x "dms" >/dev/null 2>&1; then
+    dms ipc call settings set dockPosition 2 >/dev/null 2>&1 || true
+fi
+
+# 5. Áp dụng ngay nếu Hyprland đang chạy
 if pgrep -x "Hyprland" >/dev/null 2>&1; then
     log_info "Đang reload Hyprland để áp dụng thiết lập màn hình ngay..."
     hyprctl reload >/dev/null 2>&1 || true
 fi
 
-log_success "Thiết lập màn hình hoàn tất: Philips (Trái: 0x0) và AOC (Phải: 1920x0) @ 1080p 75Hz."
+log_success "Thiết lập màn hình & Dock hoàn tất:"
+echo -e "  - Màn hình Philips (Trái: 0x0) @ 1080p 75Hz"
+echo -e "  - Màn hình AOC (Phải: 1920x0) @ 1080p 75Hz"
+echo -e "  - Dock (DankMaterialShell): Hiển thị dọc cạnh trái màn hình AOC"
