@@ -63,6 +63,9 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("helium-browser")
     hl.exec_cmd("code")
     hl.exec_cmd("chromium")
+    if [[ -f "${HOME}/.local/bin/hypr-emulator-toolbar-sync.py" ]]; then
+        hl.exec_cmd(os.getenv("HOME") .. "/.local/bin/hypr-emulator-toolbar-sync.py")
+    fi
 end)
 EOF
 

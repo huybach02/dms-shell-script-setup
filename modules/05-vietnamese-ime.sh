@@ -50,17 +50,17 @@ mkdir -p "${HOME}/.config/fcitx5"
 cat <<'EOF' > "${HOME}/.config/fcitx5/config"
 [Hotkey]
 # Enumerate when press trigger key repeatedly
-EnumerateWithTriggerKeys=True
+EnumerateWithTriggerKeys=False
 # Skip first input method while enumerating
 EnumerateSkipFirst=False
 
 [Hotkey/TriggerKeys]
 0=Alt+Shift_L
+1=Shift+Alt_L
 
 [Hotkey/AltTriggerKeys]
 
 [Hotkey/EnumerateForwardKeys]
-0=Alt+Shift_L
 
 [Hotkey/EnumerateBackwardKeys]
 
@@ -153,6 +153,15 @@ cat <<'EOF' > "${HOME}/.config/chromium-flags.conf"
 --wayland-text-input-version=3
 --password-store=basic
 EOF
+
+cat <<'EOF' > "${HOME}/.config/helium-browser-flags.conf"
+--ozone-platform-hint=auto
+--ozone-platform=wayland
+--enable-wayland-ime
+--wayland-text-input-version=3
+--password-store=basic
+EOF
+cp -f "${HOME}/.config/helium-browser-flags.conf" "${HOME}/.config/helium-flags.conf"
 
 # 7. Cấu hình biến môi trường toàn cục cho Wayland/Hyprland
 log_info "Thiết lập biến môi trường IM Module..."

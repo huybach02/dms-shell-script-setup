@@ -245,9 +245,39 @@ if 'mainMod .. " + SHIFT + F"' not in content:
         content
     )
 
+# Gán phím tắt chuyển đổi Floating/Tiling (SUPER + SHIFT + T)
+if 'mainMod .. " + SHIFT + T"' not in content:
+    content = re.sub(
+        r'(hl\.bind\(mainMod \.\. " \+ ALT \+ Space",\s*hl\.dsp\.window\.float\(\{ action = "toggle" \}\)\))',
+        r'\1\nhl.bind(mainMod .. " + SHIFT + T",   hl.dsp.window.float({ action = "toggle" }))',
+        content
+    )
+
+# Gán phím tắt chuyển đổi IME Anh / Việt (ALT + Shift, SHIFT + Alt)
+if 'fcitx5-remote -t' not in content:
+    ime_binds = (
+        '\n-- Switch Vietnamese / English IME (Alt + Shift)\n'
+        'hl.bind("ALT + Shift_L", hl.dsp.exec_cmd("fcitx5-remote -t"))\n'
+        'hl.bind("SHIFT + Alt_L", hl.dsp.exec_cmd("fcitx5-remote -t"))\n'
+        'hl.bind("ALT + Shift_R", hl.dsp.exec_cmd("fcitx5-remote -t"))\n'
+        'hl.bind("SHIFT + Alt_R", hl.dsp.exec_cmd("fcitx5-remote -t"))\n'
+    )
+    if 'hl.bind(mainMod .. " + Tab"' in content:
+        content = re.sub(r'(hl\.bind\(mainMod \.\. " \+ Tab".*\n)', r'\1' + ime_binds, content, count=1)
+    else:
+        content += ime_binds
+
+# Bổ sung non_consuming vào các bind confirmOverview để không nuốt sự kiện nhả phím Alt
+content = re.sub(
+    r'hl\.bind\("((?:ALT \+ )?Alt_[LR])",\s*hl\.dsp\.exec_cmd\((?:dmsCall \.\. )?"hypr confirmOverview"\),\s*\{([^}]+)\}\)',
+    lambda m: f'hl.bind("{m.group(1)}", hl.dsp.exec_cmd(dmsCall .. "hypr confirmOverview"), {{{m.group(2).replace("non_consuming = true,", "").replace("non_consuming = true", "").strip(", ")}, non_consuming = true }})',
+    content
+)
+
 binds_path.write_text(content, encoding="utf-8")
 print("Đã cập nhật file binds.lua thành công!")
 EOF
+
 
 # 6. Cấu hình biến môi trường Qt và theme cho Hyprland & systemd (fix lỗi Dolphin vừa trắng vừa đen khi mở bằng phím tắt)
 log_info "Cấu hình biến môi trường Qt / Theme cho systemd user session..."
@@ -308,7 +338,9 @@ if pgrep -x "Hyprland" >/dev/null 2>&1; then
 fi
 
 log_success "Hoàn tất cấu hình phím tắt, chụp màn hình và giao diện Qt:"
+echo -e "  - ${BOLD}SUPER + SHIFT + T${NC} (hoặc SUPER + ALT + Space) : Chuyển đổi Floating / Tiling của cửa sổ"
 echo -e "  - ${BOLD}SUPER + SHIFT + F${NC} (hoặc SUPER + E) : Mở trình quản lý file Dolphin"
+
 echo -e "  - ${BOLD}Giao diện Qt / Dolphin${NC}               : Đồng bộ Dark Theme (qt6ct) cho phím tắt và systemd"
 echo -e "  - ${BOLD}SUPER + SHIFT + S${NC} (hoặc Print)     : Kéo chọn vùng màn hình -> Tự copy clipboard -> Hiện popup góc phải"
 echo -e "  - ${BOLD}Popup góc phải${NC}                   : Bấm vào để mở cửa sổ chỉnh sửa ảnh (Satty: pen, shape, mũi tên, text)"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Description: Thiết lập các workspace cố định (Edge, Helium, VSCode, Chromium, 5, 8, 9 trên 2 màn hình)
+# Description: Thiết lập các workspace cố định (1-Edge, 3-VSCode, 5, 6, 7 trên màn Philips; 2-Helium, 4-Chromium, 8, 9 trên màn AOC)
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,8 +33,10 @@ cat <<'EOF' > "$WORKSPACES_FILE"
 -- 3 => VSCode (Philips)
 -- 4 => Chromium (AOC)
 -- 5 => 5 (Philips)
--- 6, 7 => Tự do, không chỉ định màn hình
--- 8, 9 => AOC
+-- 6 => 6 (Philips)
+-- 7 => 7 (Philips)
+-- 8 => 8 (AOC)
+-- 9 => 9 (AOC)
 
 -- Workspace 1: Edge (Màn hình Philips - MONITOR1)
 hl.workspace_rule({ workspace = "1", monitor = MONITOR1, default = true, persistent = true, default_name = "Edge" })
@@ -51,13 +53,13 @@ hl.workspace_rule({ workspace = "4", monitor = MONITOR2, default = true, persist
 -- Workspace 5: 5 (Màn hình Philips - MONITOR1)
 hl.workspace_rule({ workspace = "5", monitor = MONITOR1, default = true, persistent = true, default_name = "5" })
 
--- Workspaces 6, 7: Tạo sẵn persistent
-hl.workspace_rule({ workspace = "6", persistent = true })
-hl.workspace_rule({ workspace = "7", persistent = true })
+-- Workspaces 6, 7: Cố định trên màn hình Philips (MONITOR1)
+hl.workspace_rule({ workspace = "6", monitor = MONITOR1, default = true, persistent = true, default_name = "6" })
+hl.workspace_rule({ workspace = "7", monitor = MONITOR1, default = true, persistent = true, default_name = "7" })
 
 -- Workspaces 8, 9: Cố định trên màn hình AOC (MONITOR2)
-hl.workspace_rule({ workspace = "8", monitor = MONITOR2, default = true, persistent = true })
-hl.workspace_rule({ workspace = "9", monitor = MONITOR2, default = true, persistent = true })
+hl.workspace_rule({ workspace = "8", monitor = MONITOR2, default = true, persistent = true, default_name = "8" })
+hl.workspace_rule({ workspace = "9", monitor = MONITOR2, default = true, persistent = true, default_name = "9" })
 EOF
 
 # 3. Kích hoạt hiển thị Tên Workspace trên thanh bar (DankMaterialShell)
@@ -88,12 +90,13 @@ if pgrep -x "Hyprland" >/dev/null 2>&1; then
         hl.dispatch(hl.dsp.workspace.rename({ workspace = 7, name = "7" }))
         hl.dispatch(hl.dsp.workspace.rename({ workspace = 8, name = "8" }))
         hl.dispatch(hl.dsp.workspace.rename({ workspace = 9, name = "9" }))
+        hl.dispatch(hl.dsp.workspace.move({ workspace = "6", monitor = "HDMI-A-2" }))
+        hl.dispatch(hl.dsp.workspace.move({ workspace = "7", monitor = "HDMI-A-2" }))
         hl.dispatch(hl.dsp.workspace.move({ workspace = "8", monitor = "DP-2" }))
         hl.dispatch(hl.dsp.workspace.move({ workspace = "9", monitor = "DP-2" }))
     end)' >/dev/null 2>&1 || true
 fi
 
 log_success "Hoàn tất thiết lập Workspace:"
-echo -e "  - Màn hình Philips (Trái): Workspace 1 (Edge), 3 (VSCode), 5 (5)"
-echo -e "  - Màn hình AOC (Phải):    Workspace 2 (Helium), 4 (Chromium), 8, 9"
-echo -e "  - Tự do:                   Workspace 6, 7"
+echo -e "  - Màn hình Philips (Trái): Workspace 1 (Edge), 3 (VSCode), 5 (5), 6 (6), 7 (7)"
+echo -e "  - Màn hình AOC (Phải):    Workspace 2 (Helium), 4 (Chromium), 8 (8), 9 (9)"

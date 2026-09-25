@@ -41,7 +41,7 @@ if [[ -f "${PLUGIN_DIR}/get-agy-usage" ]]; then
     chmod +x "${PLUGIN_DIR}/get-agy-usage"
 fi
 
-# 3. Patch get-agy-usage và AntigravityUsageWidget.qml để hỗ trợ hiển thị Email, tự động dọn cache & cập nhật quota khi chuyển đổi / đăng xuất tài khoản
+# 3. Patch get-agy-usage và AntigravityUsageWidget.qml để hỗ trợ hiển thị Email, quota session 5h trên bar, tự động dọn cache & cập nhật quota khi chuyển đổi / đăng xuất tài khoản
 python3 - <<'EOF'
 from pathlib import Path
 import re
@@ -283,6 +283,50 @@ if widget_file.exists():
         w_content = w_content.replace("popoutHeight: 520", "popoutHeight: 580")
         w_changed = True
 
+    # Hiển thị % quota của session 5h thay vì weekly (lấy mức cao nhất giữa Gemini 5h và Claude/GPT 5h)
+    if "Most-consumed 5-hour session limit" not in w_content:
+        old_tightest_pattern = re.compile(
+            r'    // Tightest \(most-consumed\) limit across all buckets.*?'
+            r'property real tightestUsed:\s*\{.*?return maxUsed;\s*\}',
+            re.DOTALL
+        )
+        new_tightest = """    // Most-consumed 5-hour session limit across 5h buckets (Gemini 5h and Claude/GPT 5h), as a 0..100 "used" percentage.
+    property real tightestUsed: {
+        void (buckets);
+        void (bucketOrder);
+        var maxUsed = 0;
+        var found5h = false;
+        for (var i = 0; i < bucketOrder.length; i++) {
+            var id = bucketOrder[i];
+            var b = buckets[id];
+            if (!b || b.REMAINING === undefined)
+                continue;
+            var is5h = (b.WINDOW && b.WINDOW.indexOf("5h") !== -1) || (id && id.indexOf("5h") !== -1);
+            if (is5h) {
+                found5h = true;
+                var u = (1 - parseFloat(b.REMAINING)) * 100;
+                if (u > maxUsed)
+                    maxUsed = u;
+            }
+        }
+        if (found5h)
+            return maxUsed;
+
+        // Fallback to all buckets if no 5h bucket is found
+        for (var j = 0; j < bucketOrder.length; j++) {
+            var fb = buckets[bucketOrder[j]];
+            if (!fb || fb.REMAINING === undefined)
+                continue;
+            var fu = (1 - parseFloat(fb.REMAINING)) * 100;
+            if (fu > maxUsed)
+                maxUsed = fu;
+        }
+        return maxUsed;
+    }"""
+        if old_tightest_pattern.search(w_content):
+            w_content = old_tightest_pattern.sub(new_tightest, w_content, count=1)
+            w_changed = True
+
     # Hàm refreshUsage và click chuột phải vào taskbar pill để refresh ngay
     if "function refreshUsage(force)" not in w_content:
         target_fetch = '    property string logoSource: "file://" + PluginService.pluginDirectory + "/antigravityUsage/icon.svg"\n'
@@ -464,7 +508,7 @@ if widget_file.exists():
 
     if w_changed:
         widget_file.write_text(w_content, encoding="utf-8")
-        print("Đã patch AntigravityUsageWidget.qml (thẻ Email, nút Refresh xoay, dọn state và tự động làm mới khi mở Popup)!")
+        print("Đã patch AntigravityUsageWidget.qml (hiển thị % session 5h trên bar, thẻ Email, nút Refresh xoay, dọn state và tự động làm mới khi mở Popup)!")
 EOF
 
 # 4. Kích hoạt và gán widget lên thanh Bar (DankBar) trong settings.json
@@ -496,6 +540,6 @@ fi
 
 log_success "Hoàn tất thiết lập plugin Antigravity Usage:"
 echo -e "  - Vị trí: Đã hiển thị trên thanh Bar (cạnh RAM usage)"
-echo -e "  - Biểu tượng: Icon tên lửa kèm vòng tròn % hạn mức sử dụng (Gemini & Claude/GPT)"
+echo -e "  - Biểu tượng: Icon tên lửa kèm vòng tròn % quota session 5h (Gemini & Claude/GPT)"
 echo -e "  - Hiển thị Email: Đã tích hợp thẻ hiển thị Email tài khoản và gói thuê bao trong Popup"
 echo -e "  - Đổi tài khoản: Tự động xóa cache và cập nhật % quota tức thì khi đăng xuất / đăng nhập tài khoản khác"

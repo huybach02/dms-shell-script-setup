@@ -39,10 +39,16 @@ list_modules() {
         local filename=$(basename "$mod")
         # Đọc dòng mô tả đầu tiên trong file nếu có (dòng comment # Description: ...)
         local desc=$(grep -m 1 "^# Description:" "$mod" | sed 's/^# Description:[[:space:]]*//' || echo "")
+        local is_manual=$(grep -m 1 -i "^# ManualOnly:[[:space:]]*true" "$mod" || echo "")
+        local tag=""
+        if [[ -n "$is_manual" ]]; then
+            tag=" ${YELLOW}[Thủ công]${NC}"
+        fi
+
         if [[ -n "$desc" ]]; then
-            printf "  ${BOLD}%2d)${NC} %-25s - %s\n" "$idx" "$filename" "$desc"
+            printf "  ${BOLD}%2d)${NC} %-25s - %s%b\n" "$idx" "$filename" "$desc" "$tag"
         else
-            printf "  ${BOLD}%2d)${NC} %-25s\n" "$idx" "$filename"
+            printf "  ${BOLD}%2d)${NC} %-25s%b\n" "$idx" "$filename" "$tag"
         fi
         ((idx++))
     done
@@ -81,6 +87,10 @@ run_all_modules() {
     log_header "BẮT ĐẦU CHẠY TOÀN BỘ CÁC BƯỚC SETUP"
 
     for mod in "${mods[@]}"; do
+        if grep -qi "^# ManualOnly:[[:space:]]*true" "$mod"; then
+            log_info "Bỏ qua module chỉ chạy thủ công: $(basename "$mod") (chạy riêng: ./setup.sh $(basename "$mod" .sh | cut -d'-' -f1))"
+            continue
+        fi
         execute_module "$mod"
     done
 
@@ -132,6 +142,7 @@ interactive_menu() {
 
     case "$choice" in
         a|A)
+            cache_sudo
             run_all_modules
             ;;
         q|Q)
@@ -139,6 +150,7 @@ interactive_menu() {
             exit 0
             ;;
         *)
+            cache_sudo
             find_and_run_module "$choice"
             ;;
     esac
@@ -166,6 +178,7 @@ main() {
 
     case "$arg" in
         all|"")
+            cache_sudo
             run_all_modules
             ;;
         list)
@@ -183,9 +196,11 @@ main() {
                 list_modules
                 exit 1
             fi
+            cache_sudo
             find_and_run_module "$2"
             ;;
         *)
+            cache_sudo
             find_and_run_module "$arg"
             ;;
     esac
